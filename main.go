@@ -33,9 +33,14 @@ func main() {
 	scanner := bufio.NewScanner(file)
 	line := 0
 	for scanner.Scan() {
-		text := scanner.Text()
+		text := strings.TrimSpace(scanner.Text())
 		if line == 0 && strings.Contains(text, "# UNIT: ") {
 			unit = strings.TrimPrefix(text, "# UNIT: ")
+			continue
+		}
+
+		// Skip comments.
+		if strings.HasPrefix(text, "#") {
 			continue
 		}
 
