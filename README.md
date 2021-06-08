@@ -26,6 +26,6 @@ To cross-build for Windows:
 
 ## Todo
 
-- [ ] Section labels
+- [x] Section labels
 - [ ] Use case examples
 - [ ] More operations

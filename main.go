@@ -28,35 +28,68 @@ func main() {
 
 	// If a unit is specified, read it
 	unit := ""
-	total := 0.0
+	sections := []string{""}
+	totals := []float64{0}
 
 	scanner := bufio.NewScanner(file)
 	line := 0
 	for scanner.Scan() {
 		text := strings.TrimSpace(scanner.Text())
-		if line == 0 && strings.Contains(text, "# UNIT: ") {
-			unit = strings.TrimPrefix(text, "# UNIT: ")
+
+		// Extract the unit we're dealing in
+		if line == 0 && strings.Contains(text, "# UNIT:") {
+			unit = strings.TrimSpace(strings.TrimPrefix(text, "# UNIT:"))
 			continue
 		}
 
-		// Skip comments.
+		// Skip comments, but build sections
 		if strings.HasPrefix(text, "#") {
-			continue
+			if !strings.HasSuffix(text, ":") {
+				continue
+			}
+
+			section := strings.Trim(text, " #:")
+
+			sections = append(sections, section)
+			totals = append(totals, 0)
 		}
 
+		// Strip the comment away from the entry
+		if strings.Contains(text, "#") {
+			text = strings.Split(text, "#")[0]
+		}
+
+		// Extract the number
 		re := regexp.MustCompile(`[-]?\d[\d,]*[\.]?[\d{2}]*`)
 		submatchall := re.FindAllString(text, -1)
 		for _, element := range submatchall {
 			val, _ := strconv.ParseFloat(element, 64)
-			total += val
+			totals[len(totals)-1] += val
 		}
 		line += 1
 	}
 
+	p := message.NewPrinter(language.English)
+
+	for i, section := range sections {
+		// Don't print empty sections or ones that are near zero
+		if section == "" || (totals[i] > -0.001 && totals[i] < 0.001) {
+			continue
+		}
+
+		p.Printf("%s: %d %s\n", section, number.Decimal(totals[i]), unit)
+	}
+
+	total := 0.0
+	for _, n := range totals {
+		total += n
+	}
+	if len(sections) > 1 {
+		p.Printf("=====\n")
+	}
+	p.Printf("TOTAL: %d %s\n", number.Decimal(total), unit)
+
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-
-	p := message.NewPrinter(language.English)
-	p.Printf("TOTAL: %d %s\n", number.Decimal(total), unit)
 }
